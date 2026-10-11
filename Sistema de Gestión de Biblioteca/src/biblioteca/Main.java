@@ -86,6 +86,27 @@ public class Main {
         gestor.registrarPrestamo(lucia, libro1);
 
         // ==================================
+        // BUSCAR LIBROS POR TÍTULO O AUTOR
+        // ==================================
+
+        System.out.println("\n--- Búsqueda de libros por título o autor ---");
+        String terminoBusqueda = "Martin"; // Puede ser parte del título o del autor
+        System.out.println("Buscando: \"" + terminoBusqueda + "\"");
+
+        java.util.List<Libro> resultadosBusqueda = gestor.buscarLibros(terminoBusqueda);
+
+        if (resultadosBusqueda.isEmpty()) {
+            System.out.println("No se encontraron libros que coincidan con la búsqueda.");
+        } else {
+            for (Libro libroEncontrado : resultadosBusqueda) {
+                // Verificamos el estado de disponibilidad actual
+                String estadoDisponibilidad = libroEncontrado.isDisponible() ? "Disponible" : "No disponible";
+                System.out.println("-> Encontrado: " + libroEncontrado.getTitulo() 
+                    + " (Autor: " + libroEncontrado.getAutor() + ") [" + estadoDisponibilidad + "]");
+            }
+        }
+
+        // ==================================
         // MOSTRAR RESUMEN DEL SISTEMA
         // ==================================
 
@@ -98,5 +119,7 @@ public class Main {
         System.out.println("\n==================================");
         System.out.println(" FIN DE LA EJECUCION");
         System.out.println("==================================");
+
+
     }
 }

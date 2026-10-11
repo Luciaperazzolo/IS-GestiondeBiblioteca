@@ -1,8 +1,5 @@
 package biblioteca.servicios;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import biblioteca.estrategias.EstrategiaValidacionLibro;
 import biblioteca.estrategias.ValidacionEstandar;
 import biblioteca.modelos.Libro;
@@ -10,6 +7,8 @@ import biblioteca.modelos.Prestamo;
 import biblioteca.modelos.Reserva;
 import biblioteca.modelos.Socio;
 import biblioteca.observadores.Observador;
+import java.util.ArrayList;
+import java.util.List;
 
 // Patrón Singleton: solo puede existir una instancia de GestorBiblioteca en
 // toda la aplicación, ya que representa el catálogo y los préstamos "centrales"
@@ -175,5 +174,31 @@ public class GestorBiblioteca {
     //Permite consultar las reservas registradas.
     public List<Reserva> getReservas(){
         return reservas;
+    }
+
+    // NUEVA FUNCIONALIDAD (US): Buscar libros por título o autor
+    // Permite al socio buscar coincidencias y verificar su disponibilidad.
+    public List<Libro> buscarLibros(String criterio) {
+        List<Libro> resultados = new ArrayList<>();
+        
+        // Validamos que el criterio de búsqueda no esté vacío
+        if (criterio == null || criterio.isBlank()) {
+            return resultados;
+        }
+
+        // Pasamos el criterio a minúsculas para una búsqueda flexible (case-insensitive)
+        String filtro = criterio.toLowerCase().trim();
+
+        for (Libro libro : libros) {
+            // Comprobamos si el título o el autor contienen el texto buscado
+            boolean coincideTitulo = libro.getTitulo().toLowerCase().contains(filtro);
+            boolean coincideAutor = libro.getAutor().toLowerCase().contains(filtro);
+
+            if (coincideTitulo || coincideAutor) {
+                resultados.add(libro);
+            }
+        }
+
+        return resultados;
     }
 }
