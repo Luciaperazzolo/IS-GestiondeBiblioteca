@@ -4,6 +4,7 @@ import biblioteca.modelos.Libro;
 import biblioteca.modelos.Prestamo;
 import biblioteca.modelos.Socio;
 import biblioteca.observadores.NotificadorConsola;
+import biblioteca.observadores.NotificadorMail;
 import biblioteca.servicios.GestorBiblioteca;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -15,6 +16,7 @@ public class Main {
         GestorBiblioteca gestor = GestorBiblioteca.getInstancia();
         //Registramos el observador que muestra las notificaciones.
         gestor.agregarObservador(new NotificadorConsola());
+        gestor.agregarObservador(new NotificadorMail());
 
         System.out.println("==================================");
         System.out.println(" SISTEMA DE GESTION DE BIBLIOTECA");
