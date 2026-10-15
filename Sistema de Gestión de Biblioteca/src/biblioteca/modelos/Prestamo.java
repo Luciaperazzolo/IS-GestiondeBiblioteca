@@ -57,6 +57,18 @@ public class Prestamo {
         return fechaDevolucion == null && fechaConsulta.isAfter(fechaVencimiento);
     }
 
+    // Un préstamo está próximo a vencer si está activo y faltan como máximo
+    // los días indicados, sin haber superado todavía la fecha límite.
+    public boolean estaProximoAVencer(LocalDateTime fechaConsulta, int diasAnticipacion) {
+        Objects.requireNonNull(fechaConsulta, "La fecha de consulta es obligatoria");
+        if (diasAnticipacion < 0) {
+            throw new IllegalArgumentException("Los días de anticipación no pueden ser negativos");
+        }
+        return fechaDevolucion == null
+                && !fechaConsulta.isAfter(fechaVencimiento)
+                && !fechaConsulta.plusDays(diasAnticipacion).isBefore(fechaVencimiento);
+    }
+
     // Registra la fecha y hora de devolución una sola vez.
     public void registrarDevolucion() {
         if (fechaDevolucion == null) {

@@ -9,7 +9,10 @@ import biblioteca.modelos.Socio;
 import biblioteca.observadores.Observador;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 // Patrón Singleton: solo puede existir una instancia de GestorBiblioteca en
 // toda la aplicación, ya que representa el catálogo y los préstamos "centrales"
@@ -17,13 +20,17 @@ import java.util.List;
 
 public class GestorBiblioteca {
 
+    // Se avisa cuando faltan 3 días o menos para devolver el libro.
+    public static final int DIAS_ANTICIPACION_AVISO = 3;
+
     private static GestorBiblioteca instancia;
 
     private final List<Libro> libros;
     private final List<Socio> socios;
     private final List<Prestamo> prestamos;
-    private final List<Reserva> reservas; //Nueva lista del SCRUM-20, almacena las reservas registradas.
+    private final List<Reserva> reservas; //Nueva lista del SCRUM 20, almacena las reservas registradas.
     private final List<Observador> observadores; // quienes escuchan nuevos préstamos (Observer)
+    private final Set<Prestamo> prestamosAvisados; // evita repetir el aviso en la misma ejecución
     private EstrategiaValidacionLibro estrategiaValidacion; // validación actual (Strategy)
 
     // Constructor privado: nadie fuera de la clase puede hacer "new GestorBiblioteca()"
@@ -33,6 +40,7 @@ public class GestorBiblioteca {
         this.prestamos = new ArrayList<>();
         this.reservas = new ArrayList<>();
         this.observadores = new ArrayList<>();
+        this.prestamosAvisados = new HashSet<>();
         this.estrategiaValidacion = new ValidacionEstandar(); // estrategia por defecto
     }
 
@@ -63,13 +71,6 @@ public class GestorBiblioteca {
             return false;
         }
 
-        for (Libro existente : libros) {
-        if (existente.getId() == libro.getId()) {
-        System.out.println("[Error] Ya existe un libro con el ID " + libro.getId() + ".");
-        return false;
-            }
-        }
-
         libros.add(libro);
         System.out.println("[OK] Libro cargado al catálogo: " + libro);
         return true;
@@ -77,39 +78,19 @@ public class GestorBiblioteca {
 
     //SCRUM-9: Como Bibliotecario, quiero registrar el préstamo de un libro a un socio ---
     public boolean registrarPrestamo(Socio socio, Libro libro) {
-    if (!socios.contains(socio)) {
-        System.out.println("[Error] El socio no está registrado.");
-        return false;
-    }
-    if (!libros.contains(libro)) {
-        System.out.println("[Error] El libro no está en el catálogo.");
-        return false;
-    }
-    if (!libro.isDisponible()) {
-        System.out.println("[Error] El libro \"" + libro.getTitulo() + "\" no está disponible.");
-        return false;
-    }
+        if (!libro.isDisponible()) {
+            System.out.println("[Error] El libro \"" + libro.getTitulo() + "\" no está disponible.");
+            return false;
+        }
+        libro.setDisponible(false);
+        Prestamo prestamo = new Prestamo(socio, libro);
+        prestamos.add(prestamo);
 
-    // Si el libro tiene una reserva notificada, solo puede retirarlo ese socio.
-    Reserva reserva = buscarReservaParaRetirar(libro);
-    if (reserva != null && reserva.getSocio().getId() != socio.getId()) {
-        System.out.println("[Error] El libro \"" + libro.getTitulo() + "\" está reservado para " + reserva.getSocio().getNombre() + ".");
-        return false;
-    }
-
-    libro.setDisponible(false);
-    Prestamo prestamo = new Prestamo(socio, libro);
-    prestamos.add(prestamo);
-
-    if (reserva != null) {
-        reserva.marcarAtendida();
-    }
-
-    // Notifica a todos los observadores registrados (Observer)
-    for (Observador observador : observadores) {
-        observador.notificarPrestamo(prestamo);
-    }
-    return true;
+        // Notifica a todos los observadores registrados (Observer)
+        for (Observador observador : observadores) {
+            observador.actualizar(prestamo);
+        }
+        return true;
     }
 
     public boolean devolverLibro(Libro libro) {
@@ -143,7 +124,7 @@ public class GestorBiblioteca {
         return true;
     }
 
-    //SCRUM-20: registra una reserva para un libro prestado.
+    //SCRUM 20: registra una reserva para un libro prestado.
     public boolean registrarReserva(Socio socio, Libro libro) {
         //Solo pueden reservar los socios registrados.
         if (!socios.contains(socio)) {
@@ -184,15 +165,8 @@ public class GestorBiblioteca {
         return null;
     }
 
-    public boolean registrarSocio(Socio socio) {
-    for (Socio existente : socios) {
-        if (existente.getId() == socio.getId()) {
-            System.out.println("[Error] Ya existe un socio con el ID " + socio.getId() + ".");
-            return false;
-        }
-    }
-    socios.add(socio);
-    return true;
+    public void registrarSocio(Socio socio) {
+        socios.add(socio);
     }
 
     public List<Libro> getLibros(){
@@ -226,6 +200,35 @@ public class GestorBiblioteca {
             }
         }
         return vencidos;
+    }
+
+    // Historia de usuario: avisar al socio cuando se acerca el vencimiento.
+    // Debe llamarse periódicamente (o al iniciar el sistema): el proyecto
+    // es una aplicación de consola y no tiene un servicio en segundo plano.
+    public int avisarPrestamosProximosAVencer() {
+        return avisarPrestamosProximosAVencer(LocalDateTime.now());
+    }
+
+    // Sobrecarga con fecha de referencia, útil para pruebas y demostraciones.
+    // Devuelve cuántos préstamos generaron un aviso en esta revisión.
+    public int avisarPrestamosProximosAVencer(LocalDateTime fechaConsulta) {
+        Objects.requireNonNull(fechaConsulta, "La fecha de consulta es obligatoria");
+        if (observadores.isEmpty()) {
+            return 0; // Sin canales de aviso, no los marcamos como notificados.
+        }
+
+        int avisos = 0;
+        for (Prestamo prestamo : prestamos) {
+            if (prestamo.estaProximoAVencer(fechaConsulta, DIAS_ANTICIPACION_AVISO)
+                    && !prestamosAvisados.contains(prestamo)) {
+                for (Observador observador : observadores) {
+                    observador.notificarProximoVencimiento(prestamo);
+                }
+                prestamosAvisados.add(prestamo);
+                avisos++;
+            }
+        }
+        return avisos;
     }
 
     // NUEVA FUNCIONALIDAD (US): Buscar libros por título o autor

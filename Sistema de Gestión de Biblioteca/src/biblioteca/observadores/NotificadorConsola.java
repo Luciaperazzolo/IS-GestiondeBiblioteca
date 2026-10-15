@@ -10,14 +10,15 @@ import java.time.format.DateTimeFormatter;
 
 public class NotificadorConsola implements Observador {
 
+    //Notificación original: informa que un socio retiró un libro.
     @Override
-    public void notificarPrestamo(Prestamo prestamo) {
-    System.out.println("[Notificación] " + prestamo.getSocio().getNombre()
-            + " retiró el libro \"" + prestamo.getLibro().getTitulo() + "\" el "
-            + prestamo.getFechaRetiro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+    public void actualizar(Prestamo prestamo) {
+        System.out.println("[Notificación] " + prestamo.getSocio().getNombre()
+                + " retiró el libro \"" + prestamo.getLibro().getTitulo() + "\" el "
+                + prestamo.getFechaRetiro());
     }
 
-    //SCRUM-20: avisa al socio que reservó el libro cuando este vuelve a estar disponible para retirar.
+    //SCRUM 20: avisa al socio que reservó el libro cuando este vuelve a estar disponible para retirar.
     @Override
     public void notificarReserva(Reserva reserva) {
         System.out.println(
@@ -26,5 +27,18 @@ public class NotificadorConsola implements Observador {
             + ", el libro \""
             + reserva.getLibro().getTitulo()
             + "\" que reservaste ya está disponible para retirar.");
+    }
+
+    // Simulación de un aviso dirigido al socio (no envía correos reales).
+    @Override
+    public void notificarProximoVencimiento(Prestamo prestamo) {
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        System.out.println("[AVISO DE VENCIMIENTO - CONSOLA]");
+        System.out.println("Para: " + prestamo.getSocio().getNombre()
+                + " <" + prestamo.getSocio().getCorreo() + ">");
+        System.out.println("Hola " + prestamo.getSocio().getNombre()
+                + ", el préstamo del libro \"" + prestamo.getLibro().getTitulo()
+                + "\" vence el " + prestamo.getFechaVencimiento().format(formato) + ".");
+        System.out.println("Por favor, devolvé el libro a tiempo.");
     }
 }

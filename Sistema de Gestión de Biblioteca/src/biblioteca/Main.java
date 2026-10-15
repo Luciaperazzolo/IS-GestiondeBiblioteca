@@ -4,7 +4,6 @@ import biblioteca.modelos.Libro;
 import biblioteca.modelos.Prestamo;
 import biblioteca.modelos.Socio;
 import biblioteca.observadores.NotificadorConsola;
-import biblioteca.observadores.NotificadorMail;
 import biblioteca.servicios.GestorBiblioteca;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,7 +15,6 @@ public class Main {
         GestorBiblioteca gestor = GestorBiblioteca.getInstancia();
         //Registramos el observador que muestra las notificaciones.
         gestor.agregarObservador(new NotificadorConsola());
-        gestor.agregarObservador(new NotificadorMail());
 
         System.out.println("==================================");
         System.out.println(" SISTEMA DE GESTION DE BIBLIOTECA");
@@ -49,7 +47,6 @@ public class Main {
         gestor.cargarLibro(libro2);
         gestor.cargarLibro(libro3);
 
-        
         // ==================================
         // REGISTRAR UN PRESTAMO
         // ==================================
@@ -100,7 +97,7 @@ public class Main {
         String terminoBusqueda = "Martin"; // Puede ser parte del título o del autor
         System.out.println("Buscando: \"" + terminoBusqueda + "\"");
 
-        List<Libro> resultadosBusqueda = gestor.buscarLibros(terminoBusqueda);
+        java.util.List<Libro> resultadosBusqueda = gestor.buscarLibros(terminoBusqueda);
 
         if (resultadosBusqueda.isEmpty()) {
             System.out.println("No se encontraron libros que coincidan con la búsqueda.");
@@ -126,6 +123,23 @@ public class Main {
         mostrarPrestamosVencidos(gestor.listarPrestamosVencidos(LocalDateTime.now().plusDays(15)));
 
         // ==================================
+        // AVISOS DE PRÓXIMO VENCIMIENTO
+        // ==================================
+
+        System.out.println("\n--- Avisos de vencimiento al día de hoy ---");
+        int avisosHoy = gestor.avisarPrestamosProximosAVencer();
+        if (avisosHoy == 0) {
+            System.out.println("No hay préstamos próximos a vencer para avisar.");
+        }
+
+        // La devolución se realiza 14 días después del retiro. Como Lucía
+        // acaba de llevarse el libro, simulamos una revisión dentro de 12 días.
+        // Quedarán aproximadamente 2 días para el vencimiento y aparecerá el aviso.
+        System.out.println("\n--- Demostración: avisos dentro de 12 días ---");
+        int avisosSimulados = gestor.avisarPrestamosProximosAVencer(LocalDateTime.now().plusDays(12));
+        System.out.println("Avisos generados: " + avisosSimulados);
+
+        // ==================================
         // MOSTRAR RESUMEN DEL SISTEMA
         // ==================================
 
@@ -134,7 +148,7 @@ public class Main {
         System.out.println("Cantidad de libros: " + gestor.getLibros().size());
         System.out.println("Cantidad de prestamos registrados: " + gestor.getPrestamos().size());
         System.out.println("Cantidad de reservas registradas: " + gestor.getReservas().size());
-        
+
         System.out.println("\n==================================");
         System.out.println(" FIN DE LA EJECUCION");
         System.out.println("==================================");
@@ -159,9 +173,5 @@ public class Main {
             System.out.println("Fecha de vencimiento: " + prestamo.getFechaVencimiento().format(formato));
             System.out.println("----------------------------------");
         }
-
-        
     }
-
-    
 }
