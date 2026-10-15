@@ -1,9 +1,13 @@
 package biblioteca;
 
 import biblioteca.modelos.Libro;
+import biblioteca.modelos.Prestamo;
 import biblioteca.modelos.Socio;
 import biblioteca.observadores.NotificadorConsola;
 import biblioteca.servicios.GestorBiblioteca;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public class Main {
     public static void main(String[] args) {
@@ -107,6 +111,18 @@ public class Main {
         }
 
         // ==================================
+        // CONSULTAR PRÉSTAMOS VENCIDOS
+        // ==================================
+
+        System.out.println("\n--- Prestamos vencidos al dia de hoy ---");
+        mostrarPrestamosVencidos(gestor.listarPrestamosVencidos());
+
+        // Demostración: los préstamos se acaban de registrar, por eso aún no están vencidos.
+        // Consultamos una fecha futura para poder ver el resultado sin alterar los datos reales.
+        System.out.println("\n--- Demostracion: consulta dentro de 15 dias ---");
+        mostrarPrestamosVencidos(gestor.listarPrestamosVencidos(LocalDateTime.now().plusDays(15)));
+
+        // ==================================
         // MOSTRAR RESUMEN DEL SISTEMA
         // ==================================
 
@@ -121,5 +137,24 @@ public class Main {
         System.out.println("==================================");
 
 
+    }
+
+    // Muestra la información necesaria para hacer el seguimiento de las devoluciones pendientes.
+    private static void mostrarPrestamosVencidos(List<Prestamo> vencidos) {
+        if (vencidos.isEmpty()) {
+            System.out.println("No hay prestamos vencidos.");
+            return;
+        }
+
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        for (Prestamo prestamo : vencidos) {
+            System.out.println("Libro: " + prestamo.getLibro().getTitulo());
+            System.out.println("Socio: " + prestamo.getSocio().getNombre());
+            System.out.println("Contacto: " + prestamo.getSocio().getCorreo()
+                    + " | " + prestamo.getSocio().getTelefono());
+            System.out.println("Fecha de retiro: " + prestamo.getFechaRetiro().format(formato));
+            System.out.println("Fecha de vencimiento: " + prestamo.getFechaVencimiento().format(formato));
+            System.out.println("----------------------------------");
+        }
     }
 }

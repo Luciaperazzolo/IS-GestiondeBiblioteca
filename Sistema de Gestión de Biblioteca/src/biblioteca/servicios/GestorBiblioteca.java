@@ -7,6 +7,7 @@ import biblioteca.modelos.Prestamo;
 import biblioteca.modelos.Reserva;
 import biblioteca.modelos.Socio;
 import biblioteca.observadores.Observador;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -174,6 +175,23 @@ public class GestorBiblioteca {
     //Permite consultar las reservas registradas.
     public List<Reserva> getReservas(){
         return reservas;
+    }
+
+    // US: Como Bibliotecario, quiero ver un listado de préstamos vencidos.
+    // Solo devuelve préstamos que siguen activos y superaron la fecha límite.
+    public List<Prestamo> listarPrestamosVencidos() {
+        return listarPrestamosVencidos(LocalDateTime.now());
+    }
+
+    // Sobrecarga para consultar los vencimientos en una fecha determinada.
+    public List<Prestamo> listarPrestamosVencidos(LocalDateTime fechaConsulta) {
+        List<Prestamo> vencidos = new ArrayList<>();
+        for (Prestamo prestamo : prestamos) {
+            if (prestamo.estaVencido(fechaConsulta)) {
+                vencidos.add(prestamo);
+            }
+        }
+        return vencidos;
     }
 
     // NUEVA FUNCIONALIDAD (US): Buscar libros por título o autor
