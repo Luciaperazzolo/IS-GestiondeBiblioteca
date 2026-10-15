@@ -22,7 +22,7 @@ public class GestorBiblioteca {
     private final List<Libro> libros;
     private final List<Socio> socios;
     private final List<Prestamo> prestamos;
-    private final List<Reserva> reservas; //Nueva lista del SCRUM 20, almacena las reservas registradas.
+    private final List<Reserva> reservas; //Nueva lista del SCRUM-20, almacena las reservas registradas.
     private final List<Observador> observadores; // quienes escuchan nuevos préstamos (Observer)
     private EstrategiaValidacionLibro estrategiaValidacion; // validación actual (Strategy)
 
@@ -63,6 +63,13 @@ public class GestorBiblioteca {
             return false;
         }
 
+        for (Libro existente : libros) {
+        if (existente.getId() == libro.getId()) {
+        System.out.println("[Error] Ya existe un libro con el ID " + libro.getId() + ".");
+        return false;
+            }
+        }
+
         libros.add(libro);
         System.out.println("[OK] Libro cargado al catálogo: " + libro);
         return true;
@@ -70,19 +77,39 @@ public class GestorBiblioteca {
 
     //SCRUM-9: Como Bibliotecario, quiero registrar el préstamo de un libro a un socio ---
     public boolean registrarPrestamo(Socio socio, Libro libro) {
-        if (!libro.isDisponible()) {
-            System.out.println("[Error] El libro \"" + libro.getTitulo() + "\" no está disponible.");
-            return false;
-        }
-        libro.setDisponible(false);
-        Prestamo prestamo = new Prestamo(socio, libro);
-        prestamos.add(prestamo);
+    if (!socios.contains(socio)) {
+        System.out.println("[Error] El socio no está registrado.");
+        return false;
+    }
+    if (!libros.contains(libro)) {
+        System.out.println("[Error] El libro no está en el catálogo.");
+        return false;
+    }
+    if (!libro.isDisponible()) {
+        System.out.println("[Error] El libro \"" + libro.getTitulo() + "\" no está disponible.");
+        return false;
+    }
 
-        // Notifica a todos los observadores registrados (Observer)
-        for (Observador observador : observadores) {
-            observador.actualizar(prestamo);
-        }
-        return true;
+    // Si el libro tiene una reserva notificada, solo puede retirarlo ese socio.
+    Reserva reserva = buscarReservaParaRetirar(libro);
+    if (reserva != null && reserva.getSocio().getId() != socio.getId()) {
+        System.out.println("[Error] El libro \"" + libro.getTitulo() + "\" está reservado para " + reserva.getSocio().getNombre() + ".");
+        return false;
+    }
+
+    libro.setDisponible(false);
+    Prestamo prestamo = new Prestamo(socio, libro);
+    prestamos.add(prestamo);
+
+    if (reserva != null) {
+        reserva.marcarAtendida();
+    }
+
+    // Notifica a todos los observadores registrados (Observer)
+    for (Observador observador : observadores) {
+        observador.notificarPrestamo(prestamo);
+    }
+    return true;
     }
 
     public boolean devolverLibro(Libro libro) {
@@ -116,7 +143,7 @@ public class GestorBiblioteca {
         return true;
     }
 
-    //SCRUM 20: registra una reserva para un libro prestado.
+    //SCRUM-20: registra una reserva para un libro prestado.
     public boolean registrarReserva(Socio socio, Libro libro) {
         //Solo pueden reservar los socios registrados.
         if (!socios.contains(socio)) {
@@ -157,8 +184,15 @@ public class GestorBiblioteca {
         return null;
     }
 
-    public void registrarSocio(Socio socio) {
-        socios.add(socio);
+    public boolean registrarSocio(Socio socio) {
+    for (Socio existente : socios) {
+        if (existente.getId() == socio.getId()) {
+            System.out.println("[Error] Ya existe un socio con el ID " + socio.getId() + ".");
+            return false;
+        }
+    }
+    socios.add(socio);
+    return true;
     }
 
     public List<Libro> getLibros(){

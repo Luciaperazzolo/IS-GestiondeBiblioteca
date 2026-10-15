@@ -2,6 +2,7 @@ package biblioteca.observadores;
 
 import biblioteca.modelos.Prestamo;
 import biblioteca.modelos.Reserva;
+import java.time.format.DateTimeFormatter;
 
 // Implementación concreta del Observer: por ahora simula la notificación
 // imprimiendo por consola. El día de mañana esta clase se puede reemplazar
@@ -9,15 +10,14 @@ import biblioteca.modelos.Reserva;
 
 public class NotificadorConsola implements Observador {
 
-    //Notificación original: informa que un socio retiró un libro.
     @Override
-    public void actualizar(Prestamo prestamo) {
-        System.out.println("[Notificación] " + prestamo.getSocio().getNombre()
-                + " retiró el libro \"" + prestamo.getLibro().getTitulo() + "\" el "
-                + prestamo.getFechaRetiro());
+    public void notificarPrestamo(Prestamo prestamo) {
+    System.out.println("[Notificación] " + prestamo.getSocio().getNombre()
+            + " retiró el libro \"" + prestamo.getLibro().getTitulo() + "\" el "
+            + prestamo.getFechaRetiro().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
     }
 
-    //SCRUM 20: avisa al socio que reservó el libro cuando este vuelve a estar disponible para retirar.
+    //SCRUM-20: avisa al socio que reservó el libro cuando este vuelve a estar disponible para retirar.
     @Override
     public void notificarReserva(Reserva reserva) {
         System.out.println(

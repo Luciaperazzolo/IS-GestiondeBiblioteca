@@ -47,6 +47,7 @@ public class Main {
         gestor.cargarLibro(libro2);
         gestor.cargarLibro(libro3);
 
+        
         // ==================================
         // REGISTRAR UN PRESTAMO
         // ==================================
@@ -97,7 +98,7 @@ public class Main {
         String terminoBusqueda = "Martin"; // Puede ser parte del título o del autor
         System.out.println("Buscando: \"" + terminoBusqueda + "\"");
 
-        java.util.List<Libro> resultadosBusqueda = gestor.buscarLibros(terminoBusqueda);
+        List<Libro> resultadosBusqueda = gestor.buscarLibros(terminoBusqueda);
 
         if (resultadosBusqueda.isEmpty()) {
             System.out.println("No se encontraron libros que coincidan con la búsqueda.");
@@ -131,7 +132,7 @@ public class Main {
         System.out.println("Cantidad de libros: " + gestor.getLibros().size());
         System.out.println("Cantidad de prestamos registrados: " + gestor.getPrestamos().size());
         System.out.println("Cantidad de reservas registradas: " + gestor.getReservas().size());
-
+        
         System.out.println("\n==================================");
         System.out.println(" FIN DE LA EJECUCION");
         System.out.println("==================================");
@@ -156,5 +157,9 @@ public class Main {
             System.out.println("Fecha de vencimiento: " + prestamo.getFechaVencimiento().format(formato));
             System.out.println("----------------------------------");
         }
+
+        
     }
+
+    
 }

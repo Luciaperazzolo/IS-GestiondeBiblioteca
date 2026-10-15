@@ -7,9 +7,9 @@ import biblioteca.modelos.Reserva;
 // implementa esta interfaz y se registra en el sujeto (GestorBiblioteca).
 
 public interface Observador {
-    void actualizar(Prestamo prestamo);
+    void notificarPrestamo(Prestamo prestamo);
 
-    //Nuevo método para el SCRUM 20.
+    //Nuevo método para el SCRUM-20.
     //Permite notificar que un libro reservado está disponible.
     //Se declara default para no obligar a todas las clases que implementan Observador a definir este método.
     //Por defecto, el observador no hace nada con las reservas.

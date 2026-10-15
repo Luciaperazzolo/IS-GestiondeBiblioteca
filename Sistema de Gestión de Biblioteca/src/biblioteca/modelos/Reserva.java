@@ -3,7 +3,7 @@ package biblioteca.modelos;
 import java.time.LocalDateTime;
 
 //Representa la reserva de un libro realizada por un socio.
-//Se utiliza en el SCRUM 20 para saber a quién notificar cuando el libro reservado vuelve a estar disponible.
+//Se utiliza en el SCRUM-20 para saber a quién notificar cuando el libro reservado vuelve a estar disponible.
 public class Reserva {
     private Socio socio; //Representa a quien reservo el libro.
     private Libro libro; //Representa a que libro esta esperando.
