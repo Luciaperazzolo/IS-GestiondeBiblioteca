@@ -10,35 +10,40 @@ import java.time.format.DateTimeFormatter;
 
 public class NotificadorConsola implements Observador {
 
-    //Notificación original: informa que un socio retiró un libro.
+    private static final DateTimeFormatter FORMATO =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    //Informa que se registró un préstamo.
     @Override
     public void actualizar(Prestamo prestamo) {
-        System.out.println("[Notificación] " + prestamo.getSocio().getNombre()
-                + " retiró el libro \"" + prestamo.getLibro().getTitulo() + "\" el "
-                + prestamo.getFechaRetiro());
+        System.out.println("[CONSOLA] " + prestamo.getSocio().getNombre()
+                + " retiró el libro \"" + prestamo.getLibro().getTitulo()
+                + "\" el " + prestamo.getFechaRetiro().format(FORMATO));
     }
 
-    //SCRUM 20: avisa al socio que reservó el libro cuando este vuelve a estar disponible para retirar.
+    //Informa que el libro reservado está disponible.
     @Override
     public void notificarReserva(Reserva reserva) {
-        System.out.println(
-            "[Notificación] Hola "
-            + reserva.getSocio().getNombre()
-            + ", el libro \""
-            + reserva.getLibro().getTitulo()
-            + "\" que reservaste ya está disponible para retirar.");
+        System.out.println("[CONSOLA] Hola " + reserva.getSocio().getNombre()
+                + ", el libro \"" + reserva.getLibro().getTitulo()
+                + "\" que reservaste ya está disponible para retirar.");
     }
 
-    // Simulación de un aviso dirigido al socio (no envía correos reales).
+    //Informa que se aproxima la fecha de devolución.
     @Override
     public void notificarProximoVencimiento(Prestamo prestamo) {
-        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
-        System.out.println("[AVISO DE VENCIMIENTO - CONSOLA]");
-        System.out.println("Para: " + prestamo.getSocio().getNombre()
-                + " <" + prestamo.getSocio().getCorreo() + ">");
-        System.out.println("Hola " + prestamo.getSocio().getNombre()
+        System.out.println("[CONSOLA] Hola " + prestamo.getSocio().getNombre()
                 + ", el préstamo del libro \"" + prestamo.getLibro().getTitulo()
-                + "\" vence el " + prestamo.getFechaVencimiento().format(formato) + ".");
-        System.out.println("Por favor, devolvé el libro a tiempo.");
+                + "\" vence el " + prestamo.getFechaVencimiento().format(FORMATO)
+                + ". Por favor, devolvé el libro a tiempo.");
+    }
+
+    //Informa que el préstamo ya está vencido.
+    @Override
+    public void notificarPrestamoVencido(Prestamo prestamo) {
+        System.out.println("[CONSOLA] AVISO: el préstamo del libro \""
+                + prestamo.getLibro().getTitulo() + "\" está vencido desde el "
+                + prestamo.getFechaVencimiento().format(FORMATO)
+                + ". Socio: " + prestamo.getSocio().getNombre());
     }
 }

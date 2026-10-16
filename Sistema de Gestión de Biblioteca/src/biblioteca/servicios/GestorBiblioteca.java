@@ -7,6 +7,8 @@ import biblioteca.modelos.Prestamo;
 import biblioteca.modelos.Reserva;
 import biblioteca.modelos.Socio;
 import biblioteca.observadores.Observador;
+import biblioteca.observadores.NotificadorMail;
+import biblioteca.observadores.NotificadorSMS;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,7 +21,6 @@ import java.util.Set;
 // del sistema. El constructor es privado y se accede siempre vía getInstancia().
 
 public class GestorBiblioteca {
-
     // Se avisa cuando faltan 3 días o menos para devolver el libro.
     public static final int DIAS_ANTICIPACION_AVISO = 3;
 
@@ -86,43 +87,81 @@ public class GestorBiblioteca {
         Prestamo prestamo = new Prestamo(socio, libro);
         prestamos.add(prestamo);
 
-        // Notifica a todos los observadores registrados (Observer)
+        // Notificamos a cada canal de forma independiente.
         for (Observador observador : observadores) {
-            observador.actualizar(prestamo);
+            try {
+                observador.actualizar(prestamo);
+            } catch (Exception e) {
+                System.err.println(
+                    "[Error] Falló el canal "
+                    + observador.getClass().getSimpleName()
+                    + " al notificar el préstamo: "
+                    + e.getMessage()
+                );
+
+            }
         }
         return true;
     }
 
     public boolean devolverLibro(Libro libro) {
-        Prestamo prestamoActivo = null;
-        for (int i = prestamos.size() - 1; i >= 0; i--) {
-            Prestamo prestamo = prestamos.get(i);
-            if (prestamo.getLibro().getId() == libro.getId() && prestamo.getFechaDevolucion() == null) {
-                prestamoActivo = prestamo;
-                break;
-            }
-        }
-        if (prestamoActivo == null) {
-            System.out.println("[Error] No existe un préstamo activo para este libro.");
-            return false;
-        }
-        prestamoActivo.registrarDevolucion();
-        libro.setDisponible(true);
+    Prestamo prestamoActivo = null;
 
-        System.out.println("[OK] Se devolvió el libro \"" + libro.getTitulo() + "\".");
+    // Buscamos el préstamo activo más reciente de este libro.
+    for (int i = prestamos.size() - 1; i >= 0; i--) {
+        Prestamo prestamo = prestamos.get(i);
 
-        for (Reserva reserva : reservas) {
-            if (reserva.getLibro().getId() == libro.getId() && !reserva.isAtendida() && !reserva.isNotificada()) {
-                reserva.marcarNotificada();
-                for (Observador observador : observadores) {
-                    observador.notificarReserva(reserva);
-                }
-                // Solo se avisa a la primera reserva pendiente.
-                break;
-            }
+        if (prestamo.getLibro().getId() == libro.getId()
+                && prestamo.getFechaDevolucion() == null) {
+            prestamoActivo = prestamo;
+            break;
         }
-        return true;
     }
+
+    // Si no hay un préstamo activo, no podemos registrar la devolución.
+    if (prestamoActivo == null) {
+        System.out.println(
+                "[Error] No existe un préstamo activo para este libro.");
+        return false;
+    }
+
+    // Registramos la devolución y liberamos el libro.
+    prestamoActivo.registrarDevolucion();
+    libro.setDisponible(true);
+
+    System.out.println(
+            "[OK] Se devolvió el libro \"" + libro.getTitulo() + "\".");
+
+    // Buscamos la primera reserva pendiente que todavía no fue notificada.
+    for (Reserva reserva : reservas) {
+        if (reserva.getLibro().getId() == libro.getId()
+                && !reserva.isAtendida()
+                && !reserva.isNotificada()) {
+
+            // Intentamos notificar por todos los canales registrados.
+            for (Observador observador : observadores) {
+                try {
+                    observador.notificarReserva(reserva);
+                } catch (Exception e) {
+                    System.err.println(
+                            "[Error] Falló el canal "
+                            + observador.getClass().getSimpleName()
+                            + " al notificar la reserva: "
+                            + e.getMessage());
+                }
+            }
+
+            // Marcamos la reserva como notificada después de intentar
+            // enviar el aviso por todos los canales.
+            reserva.marcarNotificada();
+
+            // Solo notificamos a la primera reserva pendiente.
+            break;
+        }
+    }
+
+    return true;
+}
 
     //SCRUM 20: registra una reserva para un libro prestado.
     public boolean registrarReserva(Socio socio, Libro libro) {
@@ -187,11 +226,12 @@ public class GestorBiblioteca {
 
     // US: Como Bibliotecario, quiero ver un listado de préstamos vencidos.
     // Solo devuelve préstamos que siguen activos y superaron la fecha límite.
+    // Devuelve los préstamos vencidos a la fecha actual.
     public List<Prestamo> listarPrestamosVencidos() {
         return listarPrestamosVencidos(LocalDateTime.now());
     }
 
-    // Sobrecarga para consultar los vencimientos en una fecha determinada.
+    // Devuelve los préstamos vencidos a una fecha específica.
     public List<Prestamo> listarPrestamosVencidos(LocalDateTime fechaConsulta) {
         List<Prestamo> vencidos = new ArrayList<>();
         for (Prestamo prestamo : prestamos) {
@@ -200,6 +240,39 @@ public class GestorBiblioteca {
             }
         }
         return vencidos;
+    }
+
+    // Sobrecarga para consultar los vencimientos en una fecha determinada.
+    public int avisarPrestamosVencidos() {
+        return avisarPrestamosVencidos(LocalDateTime.now());
+    }
+
+    public int avisarPrestamosVencidos(LocalDateTime fechaConsulta) {
+            Objects.requireNonNull(fechaConsulta, "La fecha de consulta es obligatoria");
+            if (observadores.isEmpty()) {
+                return 0;
+            }
+            int avisos = 0;
+
+        for (Prestamo prestamo : prestamos){
+            if (prestamo.estaVencido(fechaConsulta)){
+
+                // Intentamos enviar el aviso por todos los canales.
+            for (Observador observador : observadores) {
+                try {
+                    observador.notificarPrestamoVencido(prestamo);
+                } catch (Exception e) {
+                        System.err.println(
+                                "[Error] Falló el canal "
+                                + observador.getClass().getSimpleName()
+                                + " al notificar el préstamo vencido: "
+                                + e.getMessage());
+                    }
+            }
+            avisos++;
+            }
+        }
+        return avisos;
     }
 
     // Historia de usuario: avisar al socio cuando se acerca el vencimiento.
@@ -214,19 +287,31 @@ public class GestorBiblioteca {
     public int avisarPrestamosProximosAVencer(LocalDateTime fechaConsulta) {
         Objects.requireNonNull(fechaConsulta, "La fecha de consulta es obligatoria");
         if (observadores.isEmpty()) {
-            return 0; // Sin canales de aviso, no los marcamos como notificados.
+            return 0;
         }
-
         int avisos = 0;
+
         for (Prestamo prestamo : prestamos) {
-            if (prestamo.estaProximoAVencer(fechaConsulta, DIAS_ANTICIPACION_AVISO)
+            if (prestamo.estaProximoAVencer(
+                    fechaConsulta, DIAS_ANTICIPACION_AVISO)
                     && !prestamosAvisados.contains(prestamo)) {
+
+                // Cada canal se procesa de forma independiente.
                 for (Observador observador : observadores) {
-                    observador.notificarProximoVencimiento(prestamo);
+                    try {
+                        observador.notificarProximoVencimiento(prestamo);
+                    } catch (Exception e) {
+                        System.err.println(
+                            "[Error] Falló el canal "
+                            + observador.getClass().getSimpleName()
+                            + " al notificar el próximo vencimiento: "
+                            + e.getMessage());
+                        }
+                    }
+                    // Evitamos repetir el aviso para este préstamo.
+                    prestamosAvisados.add(prestamo);
+                    avisos++;
                 }
-                prestamosAvisados.add(prestamo);
-                avisos++;
-            }
         }
         return avisos;
     }

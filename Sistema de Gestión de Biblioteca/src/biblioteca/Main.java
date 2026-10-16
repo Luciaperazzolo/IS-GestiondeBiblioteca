@@ -4,6 +4,8 @@ import biblioteca.modelos.Libro;
 import biblioteca.modelos.Prestamo;
 import biblioteca.modelos.Socio;
 import biblioteca.observadores.NotificadorConsola;
+import biblioteca.observadores.NotificadorMail;
+import biblioteca.observadores.NotificadorSMS;
 import biblioteca.servicios.GestorBiblioteca;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -14,7 +16,16 @@ public class Main {
         //Obtenemos el gestor central de la biblioteca.
         GestorBiblioteca gestor = GestorBiblioteca.getInstancia();
         //Registramos el observador que muestra las notificaciones.
+        // Registramos los tres canales de notificación.
+        NotificadorMail notificadorMail = new NotificadorMail();
+
         gestor.agregarObservador(new NotificadorConsola());
+        gestor.agregarObservador(notificadorMail);
+        gestor.agregarObservador(new NotificadorSMS());
+
+        //Activamos el fallo simulado para probar el SCRUM-26.
+        //Cambiarlo a false si quieren ejecutar el sistema sin errores.
+        notificadorMail.setSimularFallo(false);
 
         System.out.println("==================================");
         System.out.println(" SISTEMA DE GESTION DE BIBLIOTECA");
@@ -138,6 +149,17 @@ public class Main {
         System.out.println("\n--- Demostración: avisos dentro de 12 días ---");
         int avisosSimulados = gestor.avisarPrestamosProximosAVencer(LocalDateTime.now().plusDays(12));
         System.out.println("Avisos generados: " + avisosSimulados);
+
+        // ==================================
+        // SCRUM-26: PRUEBA DE AVISO DE PRÉSTAMO VENCIDO
+        // ==================================
+
+        System.out.println("\n--- SCRUM-26: Aviso de préstamo vencido ---");
+        int avisosVencidos = gestor.avisarPrestamosVencidos(
+            LocalDateTime.now().plusDays(15)
+        );
+
+        System.out.println("Préstamos vencidos notificados: " + avisosVencidos);
 
         // ==================================
         // MOSTRAR RESUMEN DEL SISTEMA

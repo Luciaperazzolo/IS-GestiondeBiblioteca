@@ -20,4 +20,8 @@ public interface Observador {
     // compatibilidad con observadores existentes.
     default void notificarProximoVencimiento(Prestamo prestamo) {
     }
+
+    //Aviso de un préstamo vencido.
+    default void notificarPrestamoVencido(Prestamo prestamo) {
+    }
 }
